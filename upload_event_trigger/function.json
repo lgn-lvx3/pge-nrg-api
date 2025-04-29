@@ -1,0 +1,10 @@
+{
+	"bindings": [
+		{
+			"type": "eventGridTrigger",
+			"name": "uploadGridEvent",
+			"direction": "in"
+		}
+	],
+	"scriptFile": "../dist/upload_event_trigger/index.js"
+}
