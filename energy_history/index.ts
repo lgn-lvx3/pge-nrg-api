@@ -43,7 +43,7 @@ const httpTrigger: AzureFunction = async (
 		const entries: EnergyEntry[] = await dao.find({
 			query: `SELECT * FROM c WHERE c.type = 'energyEntry' AND c.userId = '${user.id}' ORDER BY c.entryDate DESC`,
 		});
-		context.log(entries);
+		// context.log(entries);
 		context.res = {
 			body: { data: entries } as APIResponse,
 		};

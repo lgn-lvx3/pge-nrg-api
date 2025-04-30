@@ -32,7 +32,7 @@ const httpTrigger: AzureFunction = async (
 
 	const blobName = `${req.body.filename}`;
 
-	console.log("blobName", blobName);
+	// console.log("blobName", blobName);
 	// const blobName = `${req.body.filename}-${user.id}`;
 
 	// Enter your storage account name and shared key

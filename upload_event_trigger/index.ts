@@ -1,20 +1,6 @@
 import type { EventGridEvent } from "@azure/eventgrid";
-
-// const eventGridTrigger: AzureFunction = async (
-// 	context: Context,
-// 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-// 	eventGridEvent: EventGridEvent<any>,
-// ): Promise<void> => {
-// 	context.log(
-// 		"Event Grid trigger function processed an event:",
-// 		eventGridEvent,
-// 	);
-// };
-
-// export default eventGridTrigger;
-
 import axios from "axios";
-import type { AzureFunction, Context, HttpRequest } from "@azure/functions";
+import type { AzureFunction, Context } from "@azure/functions";
 import * as stream from "node:stream";
 import { promisify } from "node:util";
 import { parse } from "csv-parse";

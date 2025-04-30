@@ -51,7 +51,7 @@ const httpTrigger: AzureFunction = async (
 		}
 		case REQUEST_METHOD.POST: {
 			const body = req.body;
-			console.log(body);
+			// console.log(body);
 			if (!body || !body.threshold || typeof body.threshold !== "number") {
 				context.res = {
 					status: 400,
