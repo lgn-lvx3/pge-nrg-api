@@ -74,28 +74,31 @@ const eventGridTrigger: AzureFunction = async (
 	context.log("Uploading CSV from", preSignedUrl);
 
 	if (!preSignedUrl) {
-		context.res = {
-			status: 400,
-			body: {
-				message:
-					"Please provide a valid pre-signed URL in the 'url' query parameter.",
-			} as APIResponse,
-		};
+		// context.res = {
+		// 	status: 400,
+		// 	body: {
+		// 		message:
+		// 			"Please provide a valid pre-signed URL in the 'url' query parameter.",
+		// 	} as APIResponse,
+		// };
+		// return;
+		context.log.error("No pre-signed URL provided");
 		return;
 	}
 
 	// validate the url with regex
 	if (!preSignedUrl && !preSignedUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/)) {
-		context.res = {
-			status: 400,
-			body: {
-				message: "Please provide a valid pre-signed URL.",
-			} as APIResponse,
-		};
+		// context.res = {
+		// 	status: 400,
+		// 	body: {
+		// 		message: "Please provide a valid pre-signed URL.",
+		// 	} as APIResponse,
+		// };
+		context.log.error("Invalid pre-signed URL", preSignedUrl);
 		return;
 	}
 
-	const dao = new CosmosRepository();
+	// const dao = new CosmosRepository();
 
 	try {
 		context.log("Downloading and processing the CSV file...");
