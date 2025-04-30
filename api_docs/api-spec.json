@@ -1,0 +1,557 @@
+{
+  "openapi": "3.0.0",
+  "failOnErrors": true,
+  "info": {
+    "title": "pge-nrg-api",
+    "version": "1.0.0",
+    "description": "OpenAPI 3.0.0 documentation for the pge-nrg-api",
+    "contact": {
+      "name": "pge-nrg",
+      "url": "https://logan@lvx3.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://https://lively-mud-02baee110.4.azurestaticapps.net/",
+      "description": "Development server"
+    }
+  ],
+  "paths": {
+    "/energy-alerts": {
+      "get": {
+        "summary": "Retrieve all alerts for a user or a specific alert by ID",
+        "description": "Fetches all alerts associated with a user or a specific alert if an ID is provided.",
+        "tags": [
+          "Alerts"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "The ID of the alert to retrieve."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of alerts or a specific alert.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new alert",
+        "description": "Adds a new alert to the database for the authenticated user.",
+        "tags": [
+          "Alerts"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "threshold": {
+                    "type": "number",
+                    "description": "The threshold value for the alert."
+                  },
+                  "channels": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ALERT_CHANNEL"
+                    },
+                    "description": "The channels through which the alert will be sent."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Alert added to database.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Threshold is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an alert",
+        "description": "Deletes an alert from the database by its ID.",
+        "tags": [
+          "Alerts"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The ID of the alert to delete."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully deleted alert.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Alert ID is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/energy-history": {
+      "get": {
+        "summary": "Retrieve energy entries",
+        "description": "Fetches energy entries for a user. Can retrieve a single entry by ID or all entries within a date range.",
+        "tags": [
+          "Energy History"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "description": "The ID of the energy entry to retrieve."
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "description": "The start date for filtering energy entries."
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "required": false,
+            "description": "The end date for filtering energy entries."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of energy entries or a specific entry.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/energy-input": {
+      "post": {
+        "summary": "Add a new energy entry",
+        "description": "This endpoint allows you to add a new energy entry to the database.",
+        "tags": [
+          "Energy"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "example": "2023-10-01"
+                  },
+                  "usage": {
+                    "type": "number",
+                    "example": 150.5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Energy entry added to database.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Date and usage are required or invalid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. User is not authorized to perform this action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/energy-upload": {
+      "post": {
+        "summary": "Upload and process energy data from a CSV file",
+        "description": "This endpoint allows you to upload a CSV file containing energy data via a pre-signed S3 URL. The data is processed and stored in the database.",
+        "tags": [
+          "Energy Upload"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "The pre-signed S3 URL of the CSV file to upload."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file downloaded and processed successfully.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. A valid S3 pre-signed URL is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error. Error processing the CSV file.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/security/generate-sas": {
+      "post": {
+        "summary": "Generate a Shared Access Signature (SAS) token for blob storage",
+        "description": "This endpoint generates a SAS token that allows secure upload of files to Azure Blob Storage. The token is valid for 1 hour and provides create and write permissions.",
+        "tags": [
+          "Security"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "filename": {
+                    "type": "string",
+                    "description": "The name of the file to be uploaded",
+                    "example": "energy_data.csv"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "SAS token generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. Filename is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized. User is not authorized to perform this action.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "userEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ALERT_CHANNEL"
+            }
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "alert"
+            ]
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "userRoles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "identityProvider": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "user"
+            ]
+          }
+        }
+      },
+      "EnergyEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "entryDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "usage": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdType": {
+            "type": "string",
+            "enum": [
+              "manual",
+              "upload"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "energyEntry"
+            ]
+          }
+        }
+      },
+      "APIResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "ALERT_CHANNEL": {
+        "type": "string",
+        "enum": [
+          "email",
+          "sms"
+        ]
+      },
+      "REQUEST_METHOD": {
+        "type": "string",
+        "enum": [
+          "GET",
+          "POST",
+          "PUT",
+          "DELETE"
+        ]
+      }
+    }
+  },
+  "tags": []
+}

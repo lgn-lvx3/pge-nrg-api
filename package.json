@@ -7,14 +7,16 @@
 		"watch": "tsc -w",
 		"clean": "rimraf dist",
 		"start": "tsc && func start",
-		"test": "echo \"No tests yet...\""
+		"test": "echo \"No tests yet...\"",
+		"docs": "swagger-jsdoc -d ./api_docs/swagger-definition.js ./**/*.ts -o ./api_docs/api-spec.json"
 	},
 	"dependencies": {
 		"@azure/cosmos": "^4.2.0",
 		"@azure/eventgrid": "^5.11.0",
 		"@azure/storage-blob": "^12.27.0",
 		"axios": "^1.7.9",
-		"csv-parse": "^5.6.0"
+		"csv-parse": "^5.6.0",
+		"swagger-ui-react": "^5.18.2"
 	},
 	"devDependencies": {
 		"@azure/functions": "^3.0.0",
@@ -24,7 +26,9 @@
 		"npm-run-all": "^4.1.5",
 		"rimraf": "^5.0.0",
 		"ts-jest": "^29.3.2",
-		"typescript": "^4.0.0"
+		"typescript": "^4.0.0",
+		"@types/swagger-ui-react": "^4.18.3",
+		"swagger-jsdoc": "^6.2.8"
 	},
 	"engines": {
 		"node": ">=20.x"
