@@ -112,6 +112,7 @@ export class CosmosRepository {
 	 * @date 01/06/2025
 	 */
 	async bulkInsert<T extends { id: string }>(items: T[]): Promise<void> {
+		const batchSize = 100;
 		const operations: UpsertOperationInput[] = [];
 		// loop through each passed item, build an operation for each
 		for (const item of items) {
@@ -125,9 +126,9 @@ export class CosmosRepository {
 
 		// cosmos has a limit of 100 operations per batch
 		// loop through the operations in batches of 100 by setting i to 0 and incrementing by 100
-		for (let i = 0; i < operations.length; i += 100) {
+		for (let i = 0; i < operations.length; i += batchSize) {
 			// get the next 100 operations by slicing the array from i to i + 100 aka a batch
-			const batch = operations.slice(i, i + 100);
+			const batch = operations.slice(i, i + batchSize);
 			console.log("Bulk inserting batch", i, "of", operations.length);
 			// send the batch to cosmos
 			await this.client

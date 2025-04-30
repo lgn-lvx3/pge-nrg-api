@@ -20,9 +20,12 @@ import { promisify } from "node:util";
 import { parse } from "csv-parse";
 import type { APIResponse, EnergyEntry } from "../src/Types";
 import { CosmosRepository } from "../src/CosmosRepository";
-import { Utils } from "../src/Util";
-import { BlobServiceClient } from "@azure/storage-blob";
+import {
+	type BlobGetPropertiesResponse,
+	BlobServiceClient,
+} from "@azure/storage-blob";
 
+// blob storage event grid playload example
 // {
 // 	topic: '/subscriptions/6787fdad-61e2-47c6-85af-05ebd390cf56/resourceGroups/pge-rg/providers/Microsoft.Storage/storageAccounts/pgeblob',
 // 	subject: '/blobServices/default/containers/pge-nrg/blobs/example_2500.csv/example_2500.csv',
@@ -72,32 +75,21 @@ const eventGridTrigger: AzureFunction = async (
 	);
 
 	// Get container client
-	const containerClient = blobServiceClient.getContainerClient(containerName);
+	const containerClient = blobServiceClient.getContainerClient(
+		process.env.blob_storage_container_name,
+	);
 
 	// Get blob client
 	const blobClient = containerClient.getBlobClient(blobName);
+	let blobProperties: BlobGetPropertiesResponse;
 
 	try {
 		// Get blob properties (including metadata)
-		const blobProperties = await blobClient.getProperties();
-		context.log("Blob metadata:", blobProperties.metadata);
-
-		// Now you can use the metadata and continue with your existing code
-		const preSignedUrl = eventGridEvent.data.url;
-		// ... rest of your existing code ...
+		blobProperties = await blobClient.getProperties();
 	} catch (error) {
 		context.log.error("Error getting blob metadata:", error);
 		throw error;
 	}
-	// const user = Utils.checkAuthorization(req);
-
-	// if (!user) {
-	// 	context.res = {
-	// 		status: 401,
-	// 		body: { message: "Unauthorized" },
-	// 	};
-	// 	return;
-	// }
 
 	context.log(
 		"Event Grid trigger function processed an event:",
@@ -105,45 +97,48 @@ const eventGridTrigger: AzureFunction = async (
 	);
 
 	const preSignedUrl = eventGridEvent.data.url; // Pre-signed S3 URL as a query parameter
-	const user = {
-		id: "123",
-	};
-
-	context.log("Uploading CSV from", preSignedUrl);
 
 	if (!preSignedUrl) {
-		// context.res = {
-		// 	status: 400,
-		// 	body: {
-		// 		message:
-		// 			"Please provide a valid pre-signed URL in the 'url' query parameter.",
-		// 	} as APIResponse,
-		// };
-		// return;
 		context.log.error("No pre-signed URL provided");
 		return;
 	}
 
+	context.log("Uploading CSV from", preSignedUrl);
+
 	// validate the url with regex
 	if (!preSignedUrl || !preSignedUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/)) {
-		// context.res = {
-		// 	status: 400,
-		// 	body: {
-		// 		message: "Please provide a valid pre-signed URL.",
-		// 	} as APIResponse,
-		// };
 		context.log.error("Invalid pre-signed URL", preSignedUrl);
 		return;
 	}
 
-	// const dao = new CosmosRepository();
-
 	try {
 		context.log("Downloading and processing the CSV file...");
-		// date format: yyyy-mm-dd
 		const validDateRegex = /^\d{4}-\d{1,2}-\d{1,2}$/;
 
-		// Fetch the CSV file and process it on the fly
+		// Create a single parser instance outside the transform stream
+		const parser = parse({
+			columns: (header) => header.map((h) => h.trim().toLowerCase()),
+			trim: true,
+			skip_empty_lines: true,
+			delimiter: ",",
+			from_line: 1,
+			ltrim: true,
+			rtrim: true,
+			quote: '"',
+			escape: '"',
+			bom: true,
+		});
+
+		// Set up error handling for the parser
+		parser.on("error", (err) => {
+			context.log.error("Parser error:", err);
+		});
+
+		// Set up batch array and batch size
+		const batch: EnergyEntry[] = [];
+		const BATCH_SIZE = 100;
+		const dao = new CosmosRepository();
+
 		await pipeline(
 			(
 				await axios({
@@ -151,120 +146,71 @@ const eventGridTrigger: AzureFunction = async (
 					url: preSignedUrl,
 					responseType: "stream",
 				})
-			).data, // Get the response stream
-
-			// Create a transform stream for parsing
-			new stream.Transform({
-				objectMode: true,
-				transform(chunk, encoding, callback) {
-					parse(
-						chunk.toString(),
-						{
-							columns: (header) => header.map((h) => h.trim().toLowerCase()),
-							trim: true,
-							skip_empty_lines: true,
-							// Add these options:
-							relax_column_count: true, // Be more forgiving of column count mismatches
-							skip_records_with_error: true, // Skip problematic records instead of failing
-							delimiter: ",", // Explicitly specify the delimiter
-							from_line: 1, // Start from first line
-							ltrim: true, // Trim left spaces
-							rtrim: true, // Trim right spaces
-							quote: '"', // Specify quote character
-							escape: '"', // Specify escape character
-						},
-						(err, records) => {
-							if (err) {
-								context.log("err", err);
-								callback(new Error(`Parsing error: ${err.message}`));
-								return;
-							}
-
-							context.log("Parsing ", records.length, " records");
-
-							// Add logging to help diagnose issues
-							context.log("Parsing ", records.length, " records");
-
-							// Validate records before processing
-							const validRecords = records.filter((row) => {
-								const { date, "usage(kwh)": usage } = row;
-								return date && usage !== undefined;
-							});
-
-							if (validRecords.length !== records.length) {
-								context.log.warn(
-									`Filtered out ${records.length - validRecords.length} invalid records`,
-								);
-							}
-
-							// for each row, validate the date and usage
-							for (const row of validRecords) {
-								// lowecase because lowercasing the header
-								const { date, "usage(kwh)": usage } = row;
-
-								// Validate Date
-								if (!date || !validDateRegex.test(date)) {
-									callback(new Error(`Invalid or missing Date: ${date}`));
-									return;
-								}
-
-								// Validate Usage (kWh)
-								if (usage === undefined || usage === "") {
-									callback(new Error(`Missing Usage value for Date: ${date}`));
-									return;
-									// biome-ignore lint/style/noUselessElse: <explanation>
-								} else if (Number.isNaN(Number.parseFloat(usage))) {
-									callback(
-										new Error(
-											`Invalid Usage value for Date: ${date}, Value: ${usage}`,
-										),
-									);
-									return;
-								}
-							}
-
-							callback(null, validRecords);
-						},
-					);
-				},
-			}),
-
-			// Custom writable stream to handle rows
+			).data,
+			parser,
 			new stream.Writable({
 				objectMode: true,
-				async write(rows, encoding, callback) {
-					context.log("Processing # of rows:", rows.length); // Log or process each row
-
-					// now we write to the database
-					const energyEntries: EnergyEntry[] = [];
-					for (const row of rows) {
-						const energyEntry: EnergyEntry = {
-							id: `${user.id}-${row.date}`,
-							userId: user.id,
-							entryDate: new Date(row.date),
-							usage: Number(row["usage(kwh)"]),
-							createdAt: new Date(),
-							createdType: "upload",
-							type: "energyEntry",
-						};
-						energyEntries.push(energyEntry);
+				async write(row, encoding, callback) {
+					// Validate the row
+					if (!row || typeof row !== "object") {
+						context.log.warn(`Skipping invalid row: ${JSON.stringify(row)}`);
+						return callback();
 					}
 
-					// context.log(
-					// 	"Bulk writing",
-					// 	energyEntries.length,
-					// 	"items to database",
-					// );
-					// bulk inserting lets you insert 100 files at a time
-					// saving 100x the number of calls to the database
-					try {
-						// await dao.bulkInsert(energyEntries);
-						context.log("Bulk inserting", energyEntries.length, "items");
-					} catch (err) {
-						callback(new Error(`Error bulk inserting: ${err}`));
-						context.log("Error bulk inserting", err);
+					const date = row.date;
+					const usage = row["usage(kwh)"];
+					const usageNum = Number.parseFloat(usage);
+
+					if (!date || !validDateRegex.test(date)) {
+						context.log.warn(
+							`Skipping row with invalid date: ${JSON.stringify(row)}`,
+						);
+						return callback();
 					}
-					callback(); // Signal that the row is processed
+					if (usage === undefined || usage === "" || Number.isNaN(usageNum)) {
+						context.log.warn(
+							`Skipping row with invalid usage: ${JSON.stringify(row)}`,
+						);
+						return callback();
+					}
+
+					const energyEntry: EnergyEntry = {
+						id: `${blobProperties.metadata.userid}-${date}`,
+						userId: blobProperties.metadata.userid,
+						entryDate: new Date(date),
+						usage: usageNum,
+						createdAt: new Date(),
+						createdType: "upload",
+						type: "energyEntry",
+					};
+
+					batch.push(energyEntry);
+
+					// If batch is full, insert and clear
+					if (batch.length >= BATCH_SIZE) {
+						try {
+							await dao.bulkInsert(batch);
+							batch.length = 0; // Clear batch
+						} catch (err) {
+							context.log.error("Error bulk inserting", err);
+							return callback(err);
+						}
+					}
+					callback();
+				},
+				// When the stream ends, flush any remaining records
+				async final(callback) {
+					if (batch.length > 0) {
+						try {
+							await dao.bulkInsert(batch);
+							context.log(`Bulk inserting final ${batch.length} items`);
+							batch.length = 0;
+						} catch (err) {
+							context.log.error("Error bulk inserting final batch", err);
+							return callback(err);
+						}
+					}
+					callback();
 				},
 			}),
 		);
