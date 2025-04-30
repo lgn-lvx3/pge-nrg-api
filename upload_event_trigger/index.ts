@@ -87,7 +87,7 @@ const eventGridTrigger: AzureFunction = async (
 	}
 
 	// validate the url with regex
-	if (!preSignedUrl && !preSignedUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/)) {
+	if (!preSignedUrl || !preSignedUrl.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/)) {
 		// context.res = {
 		// 	status: 400,
 		// 	body: {
@@ -125,6 +125,15 @@ const eventGridTrigger: AzureFunction = async (
 							columns: (header) => header.map((h) => h.trim().toLowerCase()),
 							trim: true,
 							skip_empty_lines: true,
+							// Add these options:
+							relax_column_count: true, // Be more forgiving of column count mismatches
+							skip_records_with_error: true, // Skip problematic records instead of failing
+							delimiter: ",", // Explicitly specify the delimiter
+							from_line: 1, // Start from first line
+							ltrim: true, // Trim left spaces
+							rtrim: true, // Trim right spaces
+							quote: '"', // Specify quote character
+							escape: '"', // Specify escape character
 						},
 						(err, records) => {
 							if (err) {
@@ -135,8 +144,23 @@ const eventGridTrigger: AzureFunction = async (
 
 							context.log("Parsing ", records.length, " records");
 
+							// Add logging to help diagnose issues
+							context.log("Parsing ", records.length, " records");
+
+							// Validate records before processing
+							const validRecords = records.filter((row) => {
+								const { date, "usage(kwh)": usage } = row;
+								return date && usage !== undefined;
+							});
+
+							if (validRecords.length !== records.length) {
+								context.log.warn(
+									`Filtered out ${records.length - validRecords.length} invalid records`,
+								);
+							}
+
 							// for each row, validate the date and usage
-							for (const row of records) {
+							for (const row of validRecords) {
 								// lowecase because lowercasing the header
 								const { date, "usage(kwh)": usage } = row;
 
@@ -161,7 +185,7 @@ const eventGridTrigger: AzureFunction = async (
 								}
 							}
 
-							callback(null, records);
+							callback(null, validRecords);
 						},
 					);
 				},
@@ -188,11 +212,11 @@ const eventGridTrigger: AzureFunction = async (
 						energyEntries.push(energyEntry);
 					}
 
-					context.log(
-						"Bulk writing",
-						energyEntries.length,
-						"items to database",
-					);
+					// context.log(
+					// 	"Bulk writing",
+					// 	energyEntries.length,
+					// 	"items to database",
+					// );
 					// bulk inserting lets you insert 100 files at a time
 					// saving 100x the number of calls to the database
 					try {
