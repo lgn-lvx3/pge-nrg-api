@@ -21,6 +21,7 @@ import { parse } from "csv-parse";
 import type { APIResponse, EnergyEntry } from "../src/Types";
 import { CosmosRepository } from "../src/CosmosRepository";
 import { Utils } from "../src/Util";
+import { BlobServiceClient } from "@azure/storage-blob";
 
 // {
 // 	topic: '/subscriptions/6787fdad-61e2-47c6-85af-05ebd390cf56/resourceGroups/pge-rg/providers/Microsoft.Storage/storageAccounts/pgeblob',
@@ -51,6 +52,43 @@ const eventGridTrigger: AzureFunction = async (
 	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	eventGridEvent: EventGridEvent<any>,
 ): Promise<void> => {
+	context.log(
+		"Event Grid trigger function processed an event:",
+		eventGridEvent,
+	);
+
+	// Extract container and blob name from the subject
+	// The subject format is: /blobServices/default/containers/{containerName}/blobs/{blobName}
+	const subjectParts = eventGridEvent.subject.split("/");
+	const containerName = subjectParts[4];
+	// Combine all remaining parts after 'blobs/' as the blob might contain additional '/'
+	const blobName = subjectParts.slice(6).join("/");
+
+	context.log(`Container: ${containerName}, Blob: ${blobName}`);
+
+	// Initialize the blob service client
+	const blobServiceClient = BlobServiceClient.fromConnectionString(
+		process.env.AzureWebJobsStorage, // This is the default connection string
+	);
+
+	// Get container client
+	const containerClient = blobServiceClient.getContainerClient(containerName);
+
+	// Get blob client
+	const blobClient = containerClient.getBlobClient(blobName);
+
+	try {
+		// Get blob properties (including metadata)
+		const blobProperties = await blobClient.getProperties();
+		context.log("Blob metadata:", blobProperties.metadata);
+
+		// Now you can use the metadata and continue with your existing code
+		const preSignedUrl = eventGridEvent.data.url;
+		// ... rest of your existing code ...
+	} catch (error) {
+		context.log.error("Error getting blob metadata:", error);
+		throw error;
+	}
 	// const user = Utils.checkAuthorization(req);
 
 	// if (!user) {
