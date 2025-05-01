@@ -2,6 +2,7 @@ import type { AzureFunction, Context, HttpRequest } from "@azure/functions";
 import type { APIResponse, EnergyEntry } from "../src/Types";
 import { CosmosRepository } from "../src/CosmosRepository";
 import { AzureOpenAI } from "openai";
+import { Utils } from "../src/Util";
 
 interface RecommendationResponse {
 	summary: string;
@@ -14,13 +15,12 @@ const httpTrigger: AzureFunction = async (
 	req: HttpRequest,
 ): Promise<void> => {
 	try {
-		const userId = req.params.userId;
-		if (!userId) {
+		const user = Utils.checkAuthorization(req);
+
+		if (!user) {
 			context.res = {
-				status: 400,
-				body: {
-					message: "User ID is required",
-				} as APIResponse,
+				status: 401,
+				body: { message: "Unauthorized" },
 			};
 			return;
 		}
@@ -33,7 +33,7 @@ const httpTrigger: AzureFunction = async (
 			parameters: [
 				{
 					name: "@userId",
-					value: userId,
+					value: user.id,
 				},
 			],
 		};
