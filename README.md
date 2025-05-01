@@ -87,6 +87,7 @@ graph TD
 - Energy data upload and processing
 - Real-time energy alerts and notifications
 - Historical energy data tracking and analysis
+- AI-powered energy efficiency recommendations
 - Secure blob storage integration
 - Event-driven architecture using Azure Event Grid
 - Swagger/OpenAPI documentation
@@ -144,6 +145,7 @@ The application uses Azure Cosmos DB with a doc based model, with the main colle
 ├── energy_upload/         # Energy data upload handling
 ├── energy_history/        # Historical energy data management
 ├── energy_alerts/         # Energy alert system
+├── recommendations/       # AI-powered energy recommendations
 ├── alert_timer_trigger/   # Scheduled alert processing
 ├── upload_event_trigger/  # Event-driven upload processing
 ├── security_sas/          # Security token generation
@@ -198,7 +200,36 @@ Create a `local.settings.json` file with the following structure:
     "cosmos_db_id": "your-database-id",
     "blob_storage_account_name": "",
     "blob_storage_account_key": "",
-    "blob_storage_container_name": ""
+    "blob_storage_container_name": "",
+    "AZURE_OPENAI_ENDPOINT": "your-openai-endpoint",
+    "AZURE_OPENAI_DEPLOYMENT": "your-deployment-name",
+    "AZURE_OPENAI_API_KEY": "your-openai-api-key"
   }
 }
 ```
+
+## API Endpoints
+
+### Recommendations
+
+The recommendations endpoint uses Azure OpenAI to analyze energy consumption patterns and provide personalized energy efficiency recommendations.
+
+**Endpoint:** `GET /api/recommendations/{userId}`
+
+**Response:**
+```json
+{
+  "message": "Recommendations generated successfully",
+  "data": {
+    "summary": "A brief summary of the consumption patterns",
+    "recommendations": ["List of specific recommendations"],
+    "estimatedSavings": "Estimated savings in kWh or percentage",
+    "entries": 1000
+  }
+}
+```
+
+**Error Responses:**
+- 400: User ID is required
+- 404: No energy entries found for this user
+- 500: Error generating recommendations

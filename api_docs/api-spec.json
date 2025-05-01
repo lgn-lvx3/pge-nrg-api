@@ -347,6 +347,98 @@
         }
       }
     },
+    "/api/recommendations/{userId}": {
+      "get": {
+        "summary": "Get personalized energy efficiency recommendations",
+        "description": "Analyzes a user's energy consumption patterns using Azure OpenAI to provide personalized recommendations for reducing energy usage.",
+        "tags": [
+          "Recommendations"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "userId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The ID of the user to generate recommendations for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recommendations generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Recommendations generated successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "summary": {
+                          "type": "string",
+                          "description": "A brief summary of the consumption patterns"
+                        },
+                        "recommendations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          },
+                          "description": "List of specific recommendations"
+                        },
+                        "estimatedSavings": {
+                          "type": "string",
+                          "description": "Estimated savings in kWh or percentage"
+                        },
+                        "entries": {
+                          "type": "number",
+                          "description": "Number of entries analyzed"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request. User ID is required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No energy entries found for this user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Error generating recommendations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/APIResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/security/generate-sas": {
       "post": {
         "summary": "Generate a Shared Access Signature (SAS) token for blob storage",
