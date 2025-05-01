@@ -49,11 +49,12 @@ const eventGridTrigger: AzureFunction = async (
 	// Extract container and blob name from the subject
 	// The subject format is: /blobServices/default/containers/{containerName}/blobs/{blobName}
 	const subjectParts = eventGridEvent.subject.split("/");
-	const containerName = subjectParts[4];
 	// Combine all remaining parts after 'blobs/' as the blob might contain additional '/'
 	const blobName = subjectParts.slice(6).join("/");
 
-	context.log(`Container: ${containerName}, Blob: ${blobName}`);
+	context.log(
+		`Container: ${process.env.blob_storage_container_name}, Blob: ${blobName}`,
+	);
 
 	// Initialize the blob service client
 	const blobServiceClient = BlobServiceClient.fromConnectionString(
