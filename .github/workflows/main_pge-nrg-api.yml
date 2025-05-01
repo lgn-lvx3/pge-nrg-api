@@ -10,14 +10,14 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
-  NODE_VERSION: '20.x'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  NODE_VERSION: '20.x' # set this to the node version to use (supports 8.x, 10.x, 12.x)
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
       
     steps:
       - name: 'Checkout GitHub Action'
@@ -27,59 +27,27 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'yarn'
-
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: |
-            node_modules
-            .yarn/cache
-            .yarn/unplugged
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
 
       - name: Install Yarn
-        run: npm install -g yarn
+        run: npm install -g yarn@1.22.19
 
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-
-      - name: Build project
-        run: yarn build
-
-      - name: Create deployment package
+      - name: 'Resolve Project Dependencies Using Yarn'
+        shell: pwsh
         run: |
-          # Create a clean deployment directory
-          rm -rf deployment
-          mkdir -p deployment
-          
-          # Copy only the necessary files
-          cp host.json deployment/
-          cp package.json deployment/
-          cp yarn.lock deployment/
-          cp .funcignore deployment/
-          
-          # Copy only the compiled function files
-          for dir in */; do
-            if [[ -f "$dir/function.json" ]]; then
-              mkdir -p "deployment/$dir"
-              cp "$dir/function.json" "deployment/$dir/"
-              if [[ -d "dist/$dir" ]]; then
-                cp -r "dist/$dir"/* "deployment/$dir/"
-              fi
-            fi
-          done
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          yarn install --frozen-lockfile
+          yarn build --if-present
+          yarn test --if-present
+          popd
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: deployment
+          path: .
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
     
     steps:
@@ -94,5 +62,5 @@ jobs:
         with:
           app-name: 'pge-nrg-api'
           slot-name: 'Production'
-          package: '.'
+          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_5F2BDE1981AD4BC1AB87F222F199EF7E }}
