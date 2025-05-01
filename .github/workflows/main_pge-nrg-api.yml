@@ -49,26 +49,26 @@ jobs:
       - name: Build project
         run: yarn build
 
-      - name: Cache build output
-        uses: actions/cache@v3
-        with:
-          path: dist
-          key: ${{ runner.os }}-build-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-build-
-
       - name: Create deployment package
         run: |
+          # Create a clean deployment directory
+          rm -rf deployment
           mkdir -p deployment
-          cp -r dist/* deployment/
-          cp host.json deployment/
-          cp package*.json deployment/
-          cp yarn.lock deployment/
           
-          # Copy all function directories
+          # Copy only the necessary files
+          cp host.json deployment/
+          cp package.json deployment/
+          cp yarn.lock deployment/
+          cp .funcignore deployment/
+          
+          # Copy only the compiled function files
           for dir in */; do
             if [[ -f "$dir/function.json" ]]; then
-              cp -r "$dir" deployment/
+              mkdir -p "deployment/$dir"
+              cp "$dir/function.json" "deployment/$dir/"
+              if [[ -d "dist/$dir" ]]; then
+                cp -r "dist/$dir"/* "deployment/$dir/"
+              fi
             fi
           done
 

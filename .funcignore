@@ -1,0 +1,83 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Development files
+.vscode/
+.idea/
+*.tsbuildinfo
+*.ts
+*.tsx
+*.js.map
+*.d.ts
+
+# Test files
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+coverage/
+
+# Documentation
+*.md
+docs/
+api_docs/
+
+# Environment files
+.env
+.env.*
+local.settings.json
+
+# Build output (we'll copy the dist directory manually)
+dist/
+
+# Misc
+.DS_Store
+*.log
+
+# Azure Functions specific
+*.zip
+*.vsix
+*.sln
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.csproj
+*.vbproj
+*.fsproj
+*.dbmdl
+*.jfm
+*.pfx
+*.publishsettings
+*.ps1
+*.psm1
+*.psd1
+*.msp
+*.msm
+*.scm
+*.vx
+*.vspscc
+*.vssscc
+*.scc
+*.vsa
+*.java
+*.class
+*.pyc
+*.pyo
+*.pyd
+*.dll
+*.exe
+*.so
+*.dylib
+*.nupkg
+*.nupkg.sha512
+*.nupkg.metadata 
