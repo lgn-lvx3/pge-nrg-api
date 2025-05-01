@@ -36,7 +36,13 @@ jobs:
           yarn build
 
       - name: Zip for deployment
-        run: zip -r release.zip . -x "node_modules/*" ".git/*"
+        run: |
+          # Create a deployment directory
+          mkdir -p deployment
+          # Copy only the necessary files
+          cp -r dist node_modules package.json host.json deployment/
+          # Create the zip file
+          cd deployment && zip -r ../release.zip .
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
