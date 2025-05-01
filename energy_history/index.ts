@@ -14,6 +14,7 @@ const httpTrigger: AzureFunction = async (
 	const user = Utils.checkAuthorization(req);
 
 	if (!user) {
+		context.log("Unauthorized");
 		context.res = {
 			status: 401,
 			body: { message: "Unauthorized" },
@@ -21,31 +22,39 @@ const httpTrigger: AzureFunction = async (
 		return;
 	}
 
-	const dao = mockDao ?? new CosmosRepository();
+	try {
+		const dao = mockDao ?? new CosmosRepository();
 
-	if (req.params.id) {
-		// get a single entry by id
-		const entry: EnergyEntry = await dao.getItem(req.params.id);
+		if (req.params.id) {
+			// get a single entry by id
+			const entry: EnergyEntry = await dao.getItem(req.params.id);
+			context.res = {
+				body: { data: entry } as APIResponse,
+			};
+		} else if (req.query.startDate && req.query.endDate) {
+			// get all entries between startDate and endDate
+			// order by entryDate DESC to get the most recent entries first
+			const entries: EnergyEntry[] = await dao.find({
+				query: `SELECT * FROM c WHERE c.type = 'energyEntry' AND c.userId = '${user.id}' AND c.entryDate >= '${req.query.startDate}' AND c.entryDate <= '${req.query.endDate}' ORDER BY c.entryDate DESC`,
+			});
+			context.res = {
+				body: { data: entries } as APIResponse,
+			};
+		} else {
+			// order by to get the most recent entries first
+			const entries: EnergyEntry[] = await dao.find({
+				query: `SELECT * FROM c WHERE c.type = 'energyEntry' AND c.userId = '${user.id}' ORDER BY c.entryDate DESC`,
+			});
+			// context.log(entries);
+			context.res = {
+				body: { data: entries } as APIResponse,
+			};
+		}
+	} catch (error) {
+		context.log(error);
 		context.res = {
-			body: { data: entry } as APIResponse,
-		};
-	} else if (req.query.startDate && req.query.endDate) {
-		// get all entries between startDate and endDate
-		// order by entryDate DESC to get the most recent entries first
-		const entries: EnergyEntry[] = await dao.find({
-			query: `SELECT * FROM c WHERE c.type = 'energyEntry' AND c.userId = '${user.id}' AND c.entryDate >= '${req.query.startDate}' AND c.entryDate <= '${req.query.endDate}' ORDER BY c.entryDate DESC`,
-		});
-		context.res = {
-			body: { data: entries } as APIResponse,
-		};
-	} else {
-		// order by to get the most recent entries first
-		const entries: EnergyEntry[] = await dao.find({
-			query: `SELECT * FROM c WHERE c.type = 'energyEntry' AND c.userId = '${user.id}' ORDER BY c.entryDate DESC`,
-		});
-		// context.log(entries);
-		context.res = {
-			body: { data: entries } as APIResponse,
+			status: 500,
+			body: { message: "Internal server error", error: error },
 		};
 	}
 };
