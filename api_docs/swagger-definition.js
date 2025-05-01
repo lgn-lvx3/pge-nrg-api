@@ -14,7 +14,7 @@ module.exports = {
 	},
 	servers: [
 		{
-			url: "https://https://lively-mud-02baee110.4.azurestaticapps.net/",
+			url: "https://lively-mud-02baee110.4.azurestaticapps.net/",
 			description: "Development server",
 		},
 	],
