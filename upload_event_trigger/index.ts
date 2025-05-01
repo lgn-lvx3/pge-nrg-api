@@ -57,8 +57,15 @@ const eventGridTrigger: AzureFunction = async (
 
 		// Initialize the blob service client
 		context.log("Initializing blob service client");
+		context.log(
+			"Connection string:",
+			process.env.blob_storage_connection_string,
+		);
+		context.log("Container name:", process.env.blob_storage_container_name);
+		context.log("Account name:", process.env.blob_storage_account_name);
+
 		const blobServiceClient = BlobServiceClient.fromConnectionString(
-			process.env.AzureWebJobsStorage, // This is the default connection string
+			process.env.blob_storage_connection_string,
 		);
 
 		// Get container client
@@ -70,6 +77,14 @@ const eventGridTrigger: AzureFunction = async (
 		// Get blob client
 		context.log("Getting blob client");
 		const blobClient = containerClient.getBlobClient(blobName);
+		context.log(
+			"Blob client:",
+			blobClient.accountName,
+			blobClient.containerName,
+			blobClient.name,
+			blobClient.url,
+			blobClient.getProperties(),
+		);
 		let blobProperties: BlobGetPropertiesResponse;
 
 		try {
